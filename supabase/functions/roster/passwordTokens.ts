@@ -47,7 +47,8 @@ export async function consumeResetKey(rawKey: string, fingerprint: string): Prom
     .maybeSingle();
   if (error) throw error;
   if (!data) throw new HttpError(403, "invalid_reset_token");
-  return data as ResetTokenContext;
+  const row = data as { id: string; request_id: string; member_id: string };
+  return { tokenId: row.id, requestId: row.request_id, memberId: row.member_id };
 }
 
 /**
