@@ -25,7 +25,7 @@ const schema = z
 
 type ResetPasswordValues = z.infer<typeof schema>;
 
-type ResetStatus = 'checking' | 'available' | 'unavailable' | 'submitting' | 'done' | 'error';
+type ResetStatus = 'checking' | 'available' | 'unavailable' | 'submitting' | 'error';
 
 const RESET_ERROR_CODES = new Set([
   'invalid_reset_token',
@@ -33,7 +33,7 @@ const RESET_ERROR_CODES = new Set([
   'firebase_not_configured',
 ]);
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ onComplete }: { onComplete: () => void }) {
   const { t } = useTranslation();
   const { signIn } = useAuth();
   const [status, setStatus] = useState<ResetStatus>('checking');
@@ -74,8 +74,12 @@ export function ResetPasswordForm() {
       const fp = getBrowserFingerprint();
       const { email } = await completePasswordReset(resetKey, fp, values.password);
       clearStoredResetKey();
-      await signIn(email, values.password);
-      setStatus('done');
+      try {
+        await signIn(email, values.password);
+      } catch {
+        // The password is already changed; if automatic sign-in fails, the sign-in screen takes over.
+      }
+      onComplete();
     } catch (error) {
       const code = error instanceof Error && 'code' in error ? (error as { code: string }).code : '';
       if (code === 'invalid_reset_token') {
@@ -97,7 +101,7 @@ export function ResetPasswordForm() {
     );
   }
 
-  if (status === 'unavailable' || status === 'done') {
+  if (status === 'unavailable') {
     return null;
   }
 

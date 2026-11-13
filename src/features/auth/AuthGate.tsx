@@ -54,7 +54,7 @@ export function AuthGate({ children }: { children: (member: RosterMember) => Rea
       if (resetAvailable) {
         return (
           <AuthShell title={t('auth.changePassword.title')} description={t('auth.changePassword.description')}>
-            <ResetPasswordForm />
+            <ResetPasswordForm onComplete={() => setResetAvailable(false)} />
           </AuthShell>
         );
       }
