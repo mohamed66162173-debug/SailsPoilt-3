@@ -129,17 +129,34 @@ export async function lookupFirebaseUidByEmail(email: string, accessToken?: stri
   return user?.localId ?? null;
 }
 
+/** Creates a Firebase email/password account with a verified email. */
+async function createFirebaseAccount(email: string, newPassword: string, accessToken: string): Promise<string> {
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/accounts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ email, password: newPassword, emailVerified: true }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error("firebase account create failed", res.status, sanitizeErrorDetail(detail));
+    throw new FirebaseAdminError("firebase_password_update_failed");
+  }
+  const body = (await res.json()) as { localId?: string };
+  if (!body.localId) throw new FirebaseAdminError("firebase_password_update_failed");
+  return body.localId;
+}
+
 /**
- * Updates a Firebase user's password by email. If the member row has no stored
- * firebase_uid, looks it up from Firebase first, then updates the password.
- * Returns the uid used so the caller can persist it.
+ * Sets the password for a Firebase user found by email. If no Firebase account
+ * exists yet for that email, one is created with the new password. Returns the
+ * uid used so the caller can persist it.
  */
 export async function updateFirebasePasswordByEmail(email: string, newPassword: string): Promise<string> {
   const accessToken = await getAccessToken();
-  const uid = await lookupFirebaseUidByEmail(email, accessToken);
-  if (!uid) throw new FirebaseAdminError("firebase_password_update_failed");
-  await updateFirebasePassword(uid, newPassword, accessToken);
-  return uid;
+  const existingUid = await lookupFirebaseUidByEmail(email, accessToken);
+  if (!existingUid) return createFirebaseAccount(email, newPassword, accessToken);
+  await updateFirebasePassword(existingUid, newPassword, accessToken);
+  return existingUid;
 }
 
 function sanitizeErrorDetail(detail: string): string {

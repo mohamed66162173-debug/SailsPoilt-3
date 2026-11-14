@@ -25,20 +25,24 @@ export function AuthGate({ children }: { children: (member: RosterMember) => Rea
   const [resetAvailable, setResetAvailable] = useState(false);
 
   useEffect(() => {
-    if (state.status !== 'signedOut') return;
-    if (!getStoredResetKey()) return;
+    if (state.status !== 'signedOut' || resetAvailable) return;
     let cancelled = false;
-    void (async () => {
+    const check = async () => {
+      if (!getStoredResetKey()) return;
       try {
-        const fp = getBrowserFingerprint();
-        const { available } = await checkResetContext(fp);
-        if (!cancelled) setResetAvailable(available);
+        const { available } = await checkResetContext(getBrowserFingerprint());
+        if (!cancelled && available) setResetAvailable(true);
       } catch {
-        /* ignore — show normal login */
+        /* keep waiting — show normal login until a reset is available */
       }
-    })();
-    return () => { cancelled = true; };
-  }, [state.status]);
+    };
+    void check();
+    const intervalId = window.setInterval(check, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [state.status, resetAvailable]);
 
   switch (state.status) {
     case 'loading':
