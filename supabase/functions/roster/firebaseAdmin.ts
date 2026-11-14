@@ -79,7 +79,10 @@ async function getAccessToken(): Promise<string> {
 }
 
 function pemToPkcs8(pem: string): Uint8Array {
-  const body = pem.replace(/-----BEGIN[\s\S]+?-----/g, "").replace(/\s+/g, "");
+  const body = pem
+    .replace(/-----(BEGIN|END)[^-]*-----/g, "")
+    .replace(/\\[nr]/g, "")
+    .replace(/[^A-Za-z0-9+/=]/g, "");
   const raw = atob(body);
   const bytes = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
