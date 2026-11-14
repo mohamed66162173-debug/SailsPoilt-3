@@ -33,7 +33,7 @@ const RESET_ERROR_CODES = new Set([
   'firebase_not_configured',
 ]);
 
-export function ResetPasswordForm({ onComplete }: { onComplete: () => void }) {
+export function ResetPasswordForm({ onExit }: { onExit: () => void }) {
   const { t } = useTranslation();
   const { signIn } = useAuth();
   const [status, setStatus] = useState<ResetStatus>('checking');
@@ -79,7 +79,7 @@ export function ResetPasswordForm({ onComplete }: { onComplete: () => void }) {
       } catch {
         // The password is already changed; if automatic sign-in fails, the sign-in screen takes over.
       }
-      onComplete();
+      onExit();
     } catch (error) {
       const code = error instanceof Error && 'code' in error ? (error as { code: string }).code : '';
       if (code === 'invalid_reset_token') {
@@ -139,9 +139,23 @@ export function ResetPasswordForm({ onComplete }: { onComplete: () => void }) {
       {errorMsg && (
         <p role="alert" className="rounded-lg bg-error-50 px-3 py-2 text-sm text-error-700">{errorMsg}</p>
       )}
-      <Button type="submit" disabled={status === 'submitting'} className="w-full">
-        {status === 'submitting' ? t('auth.changePassword.submitting') : t('auth.changePassword.submit')}
-      </Button>
+      <div className="flex flex-col gap-3">
+        <Button type="submit" disabled={status === 'submitting'} className="w-full">
+          {status === 'submitting' ? t('auth.changePassword.submitting') : t('auth.changePassword.submit')}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={status === 'submitting'}
+          onClick={() => {
+            clearStoredResetKey();
+            onExit();
+          }}
+          className="w-full"
+        >
+          {t('auth.changePassword.backToSignIn')}
+        </Button>
+      </div>
     </form>
   );
 }

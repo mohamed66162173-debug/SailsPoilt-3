@@ -262,7 +262,8 @@
       "confirmPassword": "Confirm new password",
       "hint": "8–12 characters with an uppercase letter, lowercase letter, number, and symbol.",
       "submit": "Save and continue",
-      "submitting": "Saving..."
+      "submitting": "Saving...",
+      "backToSignIn": "Back to sign in"
     },
     "verify": {
       "title": "Verify your email",
